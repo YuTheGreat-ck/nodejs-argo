@@ -2,18 +2,22 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'Dockerfile'
-      - 'index.js'
-      - 'package.json'
+      - Dockerfile
+      - index.js
+      - package.json
+      - .github/workflows/**
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       packages: write
@@ -21,6 +25,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Convert owner to lowercase
+        run: |
+          echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -39,10 +47,12 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/dockerjs:latest
+            ghcr.io/${{ env.OWNER_LC }}/dockerjs:latest
+            ghcr.io/${{ env.OWNER_LC }}/dockerjs:${{ github.sha }}
           labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.title=dockerjs
             org.opencontainers.image.description=HTTP Server
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=MIT
           cache-from: type=gha
           cache-to: type=gha,mode=max
